@@ -1,0 +1,59 @@
+name: Deploy Chiseche Agro Intelligence
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup pnpm
+        uses: pnpm/action-setup@v2
+        with:
+          version: 8
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'pnpm'
+
+      - name: Install dependencies
+        run: pnpm install --no-frozen-lockfile
+
+      - name: Build
+        run: npx vite build
+
+      - name: Install Vercel CLI
+        run: npm install -g vercel@latest
+
+      - name: Link & Deploy to Vercel
+        run: |
+          vercel link \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=vonse \
+            --yes \
+            --project=chiseche-agro-intelligence 2>/dev/null || true
+          
+          vercel deploy \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=vonse \
+            --prod \
+            --yes \
+            --name=chiseche-agro-intelligence
+        env:
+          VERCEL_ORG_ID: team_GXrhffF8s0b1BvFu2sLNB2IC
+
+      - name: Add ANTHROPIC_API_KEY to Vercel
+        run: |
+          echo "${{ secrets.ANTHROPIC_API_KEY }}" | vercel env add ANTHROPIC_API_KEY production \
+            --token=${{ secrets.VERCEL_TOKEN }} \
+            --scope=vonse \
+            --yes 2>/dev/null || echo "Env var already set or skipped"
+        env:
+          VERCEL_ORG_ID: team_GXrhffF8s0b1BvFu2sLNB2IC
